@@ -1,86 +1,117 @@
-# Welcome to Our Internal Development Platform
+# LINAK 14 Linear Actuator Controller
 
-This documentation is your guide to building and deploying services using our standardized IDP.
+A Python GUI application for controlling LINAK 14 linear actuators via CAN interface using the J1939 protocol.
 
----
+## Features
 
-### 1. The Service Catalog
+- **Configurable CAN Interface**: Support for multiple CAN interfaces (socketcan, pcan, vector, kvaser)
+- **Multi-Actuator Support**: Control up to 8 actuators simultaneously with individual CAN IDs
+- **Intuitive GUI**: Tile-based interface with individual controls for each actuator
+- **Safety Features**: Emergency stop functionality and proper initialization sequence
+- **Real-time Control**: Position control with range 0-130mm (0-64255 internal units)
 
-Our IDP uses Backstage's Service Catalog for all services. To get your service listed here, ensure your repository has a `catalog-info.yaml` file at its root.
+## Requirements
 
----
+- Python 3.7+
+- CAN interface hardware (USB-to-CAN adapter, etc.)
+- LINAK 14 linear actuators
 
-### 2. Getting Started: Creating a New Service
+## Installation
 
-To create a new service, do not start from scratch. Use our automated provisioning action.
-
-Go to the **`idp-admin`** repository in our GitHub organization.
-Click on the **Actions** tab.
-Select the **`Create New Repository from Template`** workflow and click **`Run workflow`**.
-Provide a name for your new service, and our automation will create a new repository with all the necessary files and CI/CD pipelines configured for you.
-
----
-
-### 3. Development Workflow and Environments
-
-Our IDP uses a Git-based workflow with automated deployments.
-
-#### **Sandbox Environments**
-
-**Purpose:** Sandbox environments are temporary, isolated environments for testing a new feature.
-
-**How it works:** When you open a Pull Request, a GitHub Actions workflow is automatically triggered. It deploys your code to a unique sandbox URL. The URL will be posted as a comment on your PR.
-
-**Access:** Use this URL to test your feature, share it with others for review, and ensure it works as expected before merging.
-
-**Cleanup:** The sandbox environment is automatically deleted when the Pull Request is closed or merged.
-
-**Visual Flow:**
-```mermaid
-graph TD
-    A[New Pull Request] --> B[CI Workflow Runs - ci.yml]
-    B --> C{CI Checks Pass?}
-    C -- No --> D[Pull Request Fails]
-    C -- Yes --> E[Deploy to Sandbox Environment]
-    E --> F[Comment on PR with URL]
-    G[PR Closed or Merged] --> H[Cleanup Sandbox Environment]
+1. Clone this repository:
+```bash
+git clone <repository-url>
+cd Linak14Controller
 ```
-#### **Production Deployments (Red/Green)**
-Our production deployment strategy is designed for zero-downtime releases.
 
-**Step 1**: Merge to release Branch: Once your feature has been tested in a sandbox and approved, merge your changes into the release branch. This triggers a GitHub Actions workflow to deploy your code to the "Red" (inactive) production environment.
-
-**Step 2**: Validation: After the deployment is complete, a member of the Platform-Ops team will manually validate the "Red" environment.
-
-**Step 3**: The Switch: The Platform-Ops team will then manually trigger a separate workflow to switch traffic from "Green" to "Red." The old "Green" environment is then available for the next deployment.
-
-**Visual Flow:**
-```mermaid
-sequenceDiagram
-    participant Developer
-    participant GitHub
-    participant Platform-Ops
-    
-    Developer->>GitHub: Pushes code to feature branch
-    GitHub->>GitHub: Triggers CI Workflow (ci.yml)
-    GitHub-->>Developer: CI Status (Pass/Fail)
-    GitHub->>GitHub: Triggers Sandbox Deployment (sandbox.yml)
-    GitHub-->>Developer: Comments with Sandbox URL on PR
-    Developer->>GitHub: Gets PR reviewed and approved
-    Developer->>GitHub: Merges PR into release branch
-    GitHub->>GitHub: Triggers Production Deployment (deploy.yml)
-    GitHub->>GitHub: Deploys code to "Red" environment
-    GitHub-->>Platform-Ops: Notifies of "Red" deployment success
-    Platform-Ops->>Platform-Ops: Manually validates "Red" environment
-    Platform-Ops->>GitHub: Manually triggers "The Switch" workflow
-    GitHub->>GitHub: Updates routing/traffic switch
-    GitHub-->>Developer: Traffic is now on new version
+2. Install Python dependencies:
+```bash
+pip install -r requirements.txt
 ```
-### 4. Retiring a Service
-When a service is no longer needed, follow these steps to retire it properly:
 
-1. Inform the Platform-Ops team and your stakeholders of the plan.
-2. Trigger the archive workflow via GitHub Actions to de-provision all cloud resources.
-3. Archive the GitHub repository in the repository's settings.
+3. Install CAN interface drivers (varies by hardware):
+   - For SocketCAN (Linux): Usually built-in
+   - For PCAN: Install PEAK drivers
+   - For Vector: Install Vector drivers
+   - For Kvaser: Install Kvaser drivers
 
-The archived service will remain in the Backstage catalog but will be marked as archived for future reference.
+## Usage
+
+1. **Run the application**:
+```bash
+python main.py
+```
+
+2. **Configure the system**:
+   - Click "File" → "Configure" to open the configuration dialog
+   - Set your CAN interface parameters:
+     - Interface type (socketcan, pcan, vector, kvaser)
+     - Channel (e.g., "can0", "PCAN_USBBUS1")
+     - Bitrate (default: 250000 for J1939)
+   - Configure actuators:
+     - Set number of actuators (1-8)
+     - Assign CAN IDs and names for each actuator
+     - Default CAN IDs start from 0x100
+
+3. **Connect and Control**:
+   - Click "Connect" to establish CAN communication
+   - Each actuator gets its own control tile with:
+     - Position slider (0-130mm)
+     - Direct position input
+     - All In/All Out buttons
+     - Stop button
+     - Initialize and Clear Error functions
+
+## LINAK 14 Protocol
+
+The application implements the LINAK 14 command protocol:
+
+### Initialization Sequence
+1. **Stop Command** (sent on startup): `03 FB FB FB FB FB FF FF`
+2. **Clear Error** (before each command): `00 FB FB FB FB FB FF FF`
+
+### Available Commands
+- **All In**: `02 FB FB FB FB FB FF FF`
+- **All Out**: `01 FB FB FB FB FB FF FF`
+- **Position Control**: `[HIGH_BYTE] [LOW_BYTE] FB FB FB FB FF FF` //TODO : Inverted bytes
+  - Position range: 0-64255 (maps to 0-130mm)
+  - 16-bit big-endian format
+
+### Communication Settings
+- **Protocol**: CAN J1939
+- **Bitrate**: 250 kbps (standard)
+- **Frame Type**: Standard (11-bit identifier) //TODO : 29-Bit
+
+## Safety Features
+
+- **Emergency Stop**: Immediately stops all actuators
+- **Proper Initialization**: Ensures actuators are in safe state on startup
+- **Error Handling**: Automatic error register clearing before commands
+- **Range Limiting**: Position commands are clamped to valid range
+
+## Troubleshooting
+
+### CAN Connection Issues
+1. Verify CAN interface is properly connected
+2. Check driver installation for your CAN hardware
+3. Ensure correct channel name and bitrate
+4. On Linux, bring up CAN interface:
+   ```bash
+   sudo ip link set can0 up type can bitrate 250000
+   ```
+
+### Actuator Not Responding
+1. Check CAN ID configuration
+2. Verify actuator power and connections
+3. Use "Initialize" button to reset actuator
+4. Try "Clear Error" if actuator shows error state
+
+### Permission Issues (Linux)
+Add user to dialout group for USB CAN adapters:
+```bash
+sudo usermod -a -G dialout $USER
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
