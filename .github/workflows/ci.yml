@@ -1,0 +1,45 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events for ALL branches
+  push:
+  pull_request:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Runs a series of commands to build and test the project
+      - name: Build and Test Project
+        run: |
+          # Replace these commands with the appropriate build and test commands for your project
+          # For example, for a Node.js project:
+          # npm install
+          # npm test
+
+          # For a Python project:
+          # pip install -r requirements.txt
+          # pytest
+          
+          # For a C++ project using CMake:
+          # mkdir build
+          # cd build
+          # cmake ..
+          # make
+          # ctest --output-on-failure
+
+          echo "This is the placeholder for your build and test logic."

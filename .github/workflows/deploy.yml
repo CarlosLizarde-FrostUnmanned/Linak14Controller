@@ -1,0 +1,51 @@
+name: Red-Green Production Deployment
+
+on:
+  # This triggers the 'Green' deployment on merges to the main branch
+  # and the 'Red' deployment on merges to the release branch
+  push:
+    branches:
+      - main
+      - release
+      
+  # This allows a manual 'Red' deployment to be triggered via the UI
+  workflow_dispatch:
+    inputs:
+      deployment_type:
+        description: 'Select deployment type'
+        required: true
+        default: 'red'
+        type: choice
+        options:
+        - green
+        - red
+
+jobs:
+  deploy-to-red:
+    # This job runs when a push to 'release' branch occurs,
+    # or when a manual 'red' deployment is triggered.
+    if: |
+      github.ref == 'refs/heads/release' || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.deployment_type == 'red')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy to Red (Inactive) Environment
+        # Replace this with your deployment script to the 'Red' environment
+        run: echo "Deploying to Red environment..."
+        
+  deploy-to-green:
+    # This job runs on merges to 'main' or a manual 'green' deployment
+    if: |
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.deployment_type == 'green')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy to Green (Active) Environment
+        # Replace this with your deployment script to the 'Green' environment
+        run: echo "Deploying to Green environment..."

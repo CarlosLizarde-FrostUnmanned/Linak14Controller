@@ -1,0 +1,19 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: <your-service-name>
+  description: The purpose of this new service.
+  annotations:
+    github.com/project-slug: <your-organization>/<your-service-name>
+  tags:
+    - <tag1>
+    - <tag2>
+  links:
+    - url: https://<your-service-url>
+      title: Production URL
+      icon: public
+spec:
+  type: service
+  lifecycle: experimental
+  owner: <your-team-name>
+  system: <your-system-name>

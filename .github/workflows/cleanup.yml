@@ -1,0 +1,21 @@
+name: Cleanup Sandbox Environment
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Tear Down Sandbox Environment
+        # Replace this step with your actual cloud de-provisioning logic.
+        # This is a placeholder that simulates the cleanup.
+        run: |
+          echo "Tearing down sandbox for PR ${{ github.event.number }}..."
+          # Example:
+          # Your cloud provider CLI commands here to delete the namespace, VM, etc.
+          # cleanup.sh --environment sandbox --pr-number ${{ github.event.number }}
+          echo "Cleanup successful."
