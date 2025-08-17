@@ -66,6 +66,9 @@ class LinakController:
 
     def send_command(self, can_id: int, command: LinakCommand, position: Optional[int] = None) -> bool:
         """Send command to actuator"""
+
+        target_id_str = hex(can_id)[5] + hex(can_id)[6]
+
         if not self.is_connected or not self.bus:
             return False
 
@@ -88,7 +91,32 @@ class LinakController:
                 return False
 
             message = can.Message(arbitration_id=can_id, data=data, is_extended_id=True)
-            self.bus.send(message)
+
+            if command == LinakCommand.ALL_IN or command == LinakCommand.ALL_OUT:
+
+                reached = False
+                counterLimit = 30000
+                counter = 0
+
+                while (reached != True):
+
+                    self.bus.send(message)
+
+                    counter = counter +1
+                    with can.Bus() as bus:
+                        for msg in bus:
+                            print(msg.data)
+
+                            source_id_str = hex(msg.arbitration_id)[7] + hex(msg.arbitration_id)[8]
+
+                            if source_id_str == target_id_str:
+                                print(msg.data)
+                                #reached = True
+                            if msg.data or counter > counterLimit:
+                                break
+            else:
+                self.bus.send(message)
+
             print(f"Sent command {command.name} to actuator {can_id}: {data}")
             return True
 
