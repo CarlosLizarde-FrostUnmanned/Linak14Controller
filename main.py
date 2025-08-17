@@ -5,6 +5,7 @@ A GUI application for controlling LINAK 14 linear actuators via CAN interface.
 """
 
 import sys
+import os
 import time
 import threading
 from typing import List, Optional, Dict
@@ -67,7 +68,8 @@ class LinakController:
     def send_command(self, can_id: int, command: LinakCommand, position: Optional[int] = None) -> bool:
         """Send command to actuator"""
 
-        target_id_str = hex(can_id)[5] + hex(can_id)[6]
+        target_id_str = hex(can_id)[6] + hex(can_id)[7]
+        print(f"Target ID: {target_id_str}")
 
         if not self.is_connected or not self.bus:
             return False
@@ -91,38 +93,53 @@ class LinakController:
                 return False
 
             message = can.Message(arbitration_id=can_id, data=data, is_extended_id=True)
-            # self.bus.send(message)
 
-            if command == LinakCommand.ALL_IN or command == LinakCommand.ALL_OUT:
+            if command in [LinakCommand.ALL_IN, LinakCommand.ALL_OUT]:
+
+                try:
+                    task = self.bus.send_periodic(message, 0.150)
+                except Exception as e:
+                    print(f"Failed to send_periodic command: {e}")
+                    return False
 
                 reached = False
-                counterLimit = 30000
                 counter = 0
+                counter_limit = 300
 
-                task = self.bus.send_periodic(message, 0.250, None, True, True, None)
+                while not reached and counter < counter_limit:
+                    counter += 1
+                    msg = self.bus.recv(timeout=0.250)  # Add timeout to avoid blocking
+                    print(f"Counter = {counter}")
+                    if msg is None:
+                        continue
+                    print(f"Received message: {msg}")
 
-                while (reached != True):
+                    source_id_str = hex(msg.arbitration_id)[8] + hex(msg.arbitration_id)[9]
+                    print(f"Source ID: {source_id_str}")
 
-                    counter = counter +1
-                    with can.Bus() as bus:
-                        for msg in bus:
-                            print(msg.data)
+                    if source_id_str == target_id_str:
+                        print(f"Matched response from {hex(can_id)}: {msg.data}")
+                        print(f"Posicion: {msg.data[1]} {msg.data[0]}")
 
-                            source_id_str = hex(msg.arbitration_id)[7] + hex(msg.arbitration_id)[8]
+                        if command == LinakCommand.ALL_IN:
+                            if msg.data[1] == 0x00 and msg.data[0] == 0x00:
+                                reached = True
+                        if command == LinakCommand.ALL_OUT:
+                            if msg.data[1] == 0xFA and msg.data[0] == 0xFF:
+                                reached = True
 
-                            if source_id_str == target_id_str:
-                                print(msg.data)
-                                #reached = True
-                            if msg.data or counter > counterLimit:
-                                task.stop()
-                                break
-            else:
+                task.stop()
+
+            if command != LinakCommand.ALL_IN and command != LinakCommand.ALL_OUT:
                 self.bus.send(message)
 
-            print(f"Sent command {command.name} to actuator {can_id}: {data}")
+            print(f"Sent command {command.name} to actuator {hex(can_id)}: {list(map(hex,data))}")
             return True
 
         except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
             print(f"Failed to send command: {e}")
             return False
 
