@@ -34,7 +34,7 @@ class ActuatorConfig:
 class LinakController:
     """Controller class for LINAK actuators via CAN"""
 
-    def __init__(self, can_interface: str = 'socketcan', channel: str = 'can0', bitrate: int = 250000):
+    def __init__(self, can_interface: str = 'kvaser', channel: str = '0', bitrate: int = 250000):
         self.can_interface = can_interface
         self.channel = channel
         self.bitrate = bitrate
