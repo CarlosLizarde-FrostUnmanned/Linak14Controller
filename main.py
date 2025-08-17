@@ -97,7 +97,7 @@ class LinakController:
             if command in [LinakCommand.ALL_IN, LinakCommand.ALL_OUT]:
 
                 try:
-                    task = self.bus.send_periodic(message, 0.150)
+                    task = self.bus.send_periodic(message, 0.025)
                 except Exception as e:
                     print(f"Failed to send_periodic command: {e}")
                     return False
@@ -108,7 +108,7 @@ class LinakController:
 
                 while not reached and counter < counter_limit:
                     counter += 1
-                    msg = self.bus.recv(timeout=0.250)  # Add timeout to avoid blocking
+                    msg = self.bus.recv(timeout=0.050)  # Add timeout to avoid blocking
                     print(f"Counter = {counter}")
                     if msg is None:
                         continue
