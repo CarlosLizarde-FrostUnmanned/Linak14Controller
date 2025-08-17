@@ -129,13 +129,13 @@ class ConfigDialog:
         can_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
 
         ttk.Label(can_frame, text="Interface:").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
-        self.interface_var = tk.StringVar(value="socketcan")
+        self.interface_var = tk.StringVar(value="kvaser")
         interface_combo = ttk.Combobox(can_frame, textvariable=self.interface_var,
                                      values=["socketcan", "pcan", "vector", "kvaser"])
         interface_combo.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 10))
 
         ttk.Label(can_frame, text="Channel:").grid(row=0, column=2, sticky=tk.W, padx=(0, 5))
-        self.channel_var = tk.StringVar(value="can0")
+        self.channel_var = tk.StringVar(value="0")
         channel_entry = ttk.Entry(can_frame, textvariable=self.channel_var, width=10)
         channel_entry.grid(row=0, column=3, sticky=(tk.W, tk.E))
 
