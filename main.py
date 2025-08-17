@@ -90,7 +90,7 @@ class LinakController:
             else:
                 return False
 
-            # message = can.Message(arbitration_id=can_id, data=data, is_extended_id=True)
+            message = can.Message(arbitration_id=can_id, data=data, is_extended_id=True)
             # self.bus.send(message)
 
             if command == LinakCommand.ALL_IN or command == LinakCommand.ALL_OUT:
