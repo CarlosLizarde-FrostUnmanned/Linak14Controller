@@ -104,7 +104,7 @@ class LinakController:
 
                 reached = False
                 counter = 0
-                counter_limit = 300
+                counter_limit = 5000
 
                 while not reached and counter < counter_limit:
                     counter += 1
@@ -118,14 +118,16 @@ class LinakController:
                     print(f"Source ID: {source_id_str}")
 
                     if source_id_str == target_id_str:
-                        print(f"Matched response from {hex(can_id)}: {msg.data}")
+                        print(f"Response from {hex(can_id)}: {msg.data}")
                         print(f"Posicion: {msg.data[1]} {msg.data[0]}")
 
                         if command == LinakCommand.ALL_IN:
                             if msg.data[1] == 0x00 and msg.data[0] == 0x00:
+                                print(f"ALL_IN Reached")
                                 reached = True
                         if command == LinakCommand.ALL_OUT:
                             if msg.data[1] == 0xFA and msg.data[0] == 0xFF:
+                                print(f"ALL_OUT Reached")
                                 reached = True
 
                 task.stop()
