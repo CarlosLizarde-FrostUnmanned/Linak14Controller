@@ -210,7 +210,7 @@ class ConfigDialog:
             can_id_dec = 418365689 + (256 * i)
             can_id = hex(can_id_dec)  # Default CAN IDs starting from 0xC0
             name = f"Actuator {i+1}"
-            self.actuators_tree.insert("", tk.END, text=str(i+1), values=(f"0x{can_id}", name))
+            self.actuators_tree.insert("", tk.END, text=str(i+1), values=(f"{can_id}", name))
 
     def edit_actuator(self):
         """Edit selected actuator configuration"""
