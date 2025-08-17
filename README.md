@@ -51,7 +51,7 @@ python main.py
    - Configure actuators:
      - Set number of actuators (1-8)
      - Assign CAN IDs and names for each actuator
-     - Default CAN IDs start from 0x100
+     - Default CAN IDs start from 0x18EFC0F9 and increments of 1 (e.g C1, C2, C3...)
 
 3. **Connect and Control**:
    - Click "Connect" to establish CAN communication
@@ -73,14 +73,14 @@ The application implements the LINAK 14 command protocol:
 ### Available Commands
 - **All In**: `02 FB FB FB FB FB FF FF`
 - **All Out**: `01 FB FB FB FB FB FF FF`
-- **Position Control**: `[HIGH_BYTE] [LOW_BYTE] FB FB FB FB FF FF` //TODO : Inverted bytes
+- **Position Control**: `[LOW_BYTE] [HIGH_BYTE] FB FB FB FB FF FF`
   - Position range: 0-64255 (maps to 0-130mm)
   - 16-bit big-endian format
 
 ### Communication Settings
 - **Protocol**: CAN J1939
 - **Bitrate**: 250 kbps (standard)
-- **Frame Type**: Standard (11-bit identifier) //TODO : 29-Bit
+- **Frame Type**: Standard (29-bit identifier), But feel free to use 11-bit identifiers
 
 ## Safety Features
 

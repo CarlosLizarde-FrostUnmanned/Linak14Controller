@@ -207,9 +207,10 @@ class ConfigDialog:
         # Add items based on number of actuators
         num_actuators = int(self.num_actuators_var.get())
         for i in range(num_actuators):
-            can_id = 0x100 + i  # Default CAN IDs starting from 0x100
+            can_id_dec = 418365689 + (256 * i)
+            can_id = hex(can_id_dec)  # Default CAN IDs starting from 0xC0
             name = f"Actuator {i+1}"
-            self.actuators_tree.insert("", tk.END, text=str(i+1), values=(f"0x{can_id:03X}", name))
+            self.actuators_tree.insert("", tk.END, text=str(i+1), values=(f"0x{can_id:08X}", name))
 
     def edit_actuator(self):
         """Edit selected actuator configuration"""
@@ -224,7 +225,7 @@ class ConfigDialog:
         current_name = values[1]
 
         # Simple dialog for editing
-        new_can_id = simpledialog.askstring("Edit CAN ID", f"Enter CAN ID (hex format, e.g., 0x100):",
+        new_can_id = simpledialog.askstring("Edit CAN ID", f"Enter CAN ID (hex format, e.g., 0x18EFXXF9):",
                                            initialvalue=current_can_id)
         if new_can_id:
             new_name = simpledialog.askstring("Edit Name", "Enter actuator name:",
