@@ -87,7 +87,7 @@ class LinakController:
             else:
                 return False
 
-            message = can.Message(arbitration_id=can_id, data=data, is_extended_id=False)
+            message = can.Message(arbitration_id=can_id, data=data, is_extended_id=True)
             self.bus.send(message)
             print(f"Sent command {command.name} to actuator {can_id}: {data}")
             return True
