@@ -122,11 +122,11 @@ class LinakController:
                         print(f"Posicion: {msg.data[1]} {msg.data[0]}")
 
                         if command == LinakCommand.ALL_IN:
-                            if msg.data[0] < 0x15 and msg.data[1] < 0x0A:
+                            if msg.data[0] < 0x05 and msg.data[1] == 0x00:
                                 print(f"ALL_IN Reached")
                                 reached = True
                         if command == LinakCommand.ALL_OUT:
-                            if msg.data[0] > 0xDA and msg.data[1] > 0x00:
+                            if msg.data[0] > 0x10 and msg.data[1] == 0x05:
                                 print(f"ALL_OUT Reached")
                                 reached = True
 
