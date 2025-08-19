@@ -27,15 +27,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m ensurepip
-          python -m pip install --upgrade pip
-          pip install --upgrade pip
-          pip install pyinstaller
-          pip install -r requirements.txt
+          py -m ensurepip
+          py -m pip install --upgrade pip
+          py -m pip install --upgrade pip
+          py -m pip install pyinstaller
+          py -m pip install -r requirements.txt
 
       - name: Build EXE with PyInstaller
         run: |
-          python -m pyinstaller --onefile --name LinakApp main.py
+          py -m pyinstaller --onefile --name LinakApp main.py
           # The .exe will be at dist\LinakApp.exe
 
       - name: Deploy to sandbox directory
