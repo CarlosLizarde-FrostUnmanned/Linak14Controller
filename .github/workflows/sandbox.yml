@@ -7,8 +7,7 @@ on:
       - reopened
       - synchronize
 
-# This permissions block grants the GITHUB_TOKEN
-# the necessary write access for pull requests.
+# This permissions block grants the GITHUB_TOKEN the necessary write access for pull requests.
 permissions:
   pull-requests: write
 
