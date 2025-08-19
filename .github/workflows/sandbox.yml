@@ -35,7 +35,7 @@ jobs:
 
       - name: Build EXE with PyInstaller
         run: |
-          pyinstaller --onefile --name LinakApp main.py
+          py -m PyInstaller --onefile --name LinakApp main.py
           # The .exe will be at dist\LinakApp.exe
 
       - name: Deploy to sandbox directory
