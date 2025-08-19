@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: GCS
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
