@@ -15,6 +15,5 @@ class ActuatorConfig:
     can_id: int
     name: str
     position: int = 0  # Current position in mm (0-130)
-
-    target_id_str = ''
+    target_id_str = '' #Actuator Address ID in hex
     target_command = ''
