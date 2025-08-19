@@ -11,29 +11,48 @@ on:
 # the necessary write access for pull requests.
 permissions:
   pull-requests: write
-  
+
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-    
+    runs-on: [self-hosted, Windows, X64, GCS]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Provision and Deploy to Sandbox
-        # Replace this step with your actual cloud deployment logic.
-        # This is a placeholder that simulates a deployment.
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
         run: |
-          echo "Provisioning sandbox for PR ${{ github.event.number }}..."
-          # Example:
-          # Your cloud provider CLI commands here to create a new namespace, VM, etc.
-          # deploy.sh --environment sandbox --pr-number ${{ github.event.number }}
-          # The deployment script should return a unique URL for the sandbox.
-          echo "Sandbox URL: https://sandbox-pr-${{ github.event.number }}.your-company.com" > sandbox_url.txt
-          echo "Deployment successful."
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build EXE with PyInstaller
+        run: |
+          pyinstaller --onefile --name LinakApp main.py
+          # The .exe will be at dist\LinakApp.exe
+
+      - name: Deploy to sandbox directory
+        shell: powershell
+        run: |
+          $pr = ${{ github.event.number }}
+          $deployPath = "C:\Sandbox\PR-$pr"
+          Remove-Item -Recurse -Force $deployPath -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $deployPath
+          Copy-Item -Path "dist\LinakApp.exe" -Destination $deployPath
+
+          # Optional: Copy other resources (config, assets, etc.):
+          # Copy-Item -Path "config.json" -Destination $deployPath
+
+          # Determine the accessible URL:
+          # If using Tailscale IP or alias with reverse proxy:
+          $url = "https://sandbox-pr-$pr.your-company.com"
+          $url | Out-File sandbox_url.txt
 
       - name: Comment on Pull Request
-        # This uses the GitHub CLI to post a comment with the sandbox URL.
         uses: actions/github-script@v6
         with:
           script: |
@@ -43,5 +62,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 Sandbox environment deployed! You can access it here: ${sandboxUrl}`
+              body: `🚀 Sandbox deployed: ${sandboxUrl}`
             });

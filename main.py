@@ -8,151 +8,12 @@ import sys
 import os
 import time
 import threading
-from typing import List, Optional, Dict
+from typing import List
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
-import can
-from dataclasses import dataclass
-from enum import Enum
 
-
-class LinakCommand(Enum):
-    """LINAK actuator command types"""
-    STOP = 0x03
-    CLEAR_ERROR = 0x00
-    ALL_OUT = 0x01
-    ALL_IN = 0x02
-
-
-@dataclass
-class ActuatorConfig:
-    """Configuration for a single actuator"""
-    can_id: int
-    name: str
-    position: int = 0  # Current position in mm (0-130)
-
-
-class LinakController:
-    """Controller class for LINAK actuators via CAN"""
-
-    def __init__(self, can_interface: str = 'kvaser', channel: str = '0', bitrate: int = 250000):
-        self.can_interface = can_interface
-        self.channel = channel
-        self.bitrate = bitrate
-        self.bus: Optional[can.BusABC] = None
-        self.is_connected = False
-
-    def connect(self) -> bool:
-        """Connect to CAN bus"""
-        try:
-            self.bus = can.interface.Bus(
-                interface=self.can_interface,
-                channel=self.channel,
-                bitrate=self.bitrate
-            )
-            self.is_connected = True
-            print(f"Connected to CAN bus: {self.channel}")
-            return True
-        except Exception as e:
-            print(f"Failed to connect to CAN bus: {e}")
-            self.is_connected = False
-            return False
-
-    def disconnect(self):
-        """Disconnect from CAN bus"""
-        if self.bus:
-            self.bus.shutdown()
-            self.is_connected = False
-            print("Disconnected from CAN bus")
-
-    def send_command(self, can_id: int, command: LinakCommand, position: Optional[int] = None) -> bool:
-        """Send command to actuator"""
-
-        target_id_str = hex(can_id)[6] + hex(can_id)[7]
-        print(f"Target ID: {target_id_str}")
-
-        if not self.is_connected or not self.bus:
-            return False
-
-        try:
-            if command == LinakCommand.STOP:
-                data = [0x03, 0xFB, 0xFB, 0xFB, 0xFB, 0xFB, 0xFF, 0xFF]
-            elif command == LinakCommand.CLEAR_ERROR:
-                data = [0x00, 0xFB, 0xFB, 0xFB, 0xFB, 0xFB, 0xFF, 0xFF]
-            elif command == LinakCommand.ALL_IN:
-                data = [0x02, 0xFB, 0xFB, 0xFB, 0xFB, 0xFB, 0xFF, 0xFF]
-            elif command == LinakCommand.ALL_OUT:
-                data = [0x01, 0xFB, 0xFB, 0xFB, 0xFB, 0xFB, 0xFF, 0xFF]
-            elif position is not None:
-                # Convert position (0-130mm) to 0-64255 range
-                pos_value = int((position / 130.0) * 64255)
-                pos_value = max(0, min(64255, pos_value))  # Clamp to valid range
-                pos_bytes = pos_value.to_bytes(2, byteorder='big')
-                data = [pos_bytes[0], pos_bytes[1], 0xFB, 0xFB, 0xFB, 0xFB, 0xFF, 0xFF]
-            else:
-                return False
-
-            message = can.Message(arbitration_id=can_id, data=data, is_extended_id=True)
-
-            if command in [LinakCommand.ALL_IN, LinakCommand.ALL_OUT]:
-
-                try:
-                    task = self.bus.send_periodic(message, 0.025)
-                except Exception as e:
-                    print(f"Failed to send_periodic command: {e}")
-                    return False
-
-                reached = False
-                counter = 0
-                counter_limit = 5000
-
-                while not reached and counter < counter_limit:
-                    counter += 1
-                    msg = self.bus.recv(timeout=0.050)  # Add timeout to avoid blocking
-                    print(f"Counter = {counter}")
-                    if msg is None:
-                        continue
-                    print(f"Received message: {msg}")
-
-                    source_id_str = hex(msg.arbitration_id)[8] + hex(msg.arbitration_id)[9]
-                    print(f"Source ID: {source_id_str}")
-
-                    if source_id_str == target_id_str:
-                        print(f"Response from {hex(can_id)}: {msg.data}")
-                        print(f"Posicion: {msg.data[1]} {msg.data[0]}")
-
-                        if command == LinakCommand.ALL_IN:
-                            if msg.data[0] < 0x05 and msg.data[1] == 0x00:
-                                print(f"ALL_IN Reached")
-                                reached = True
-                        if command == LinakCommand.ALL_OUT:
-                            if msg.data[0] > 0x10 and msg.data[1] == 0x05:
-                                print(f"ALL_OUT Reached")
-                                reached = True
-
-                task.stop()
-
-            if command != LinakCommand.ALL_IN and command != LinakCommand.ALL_OUT:
-                self.bus.send(message)
-
-            print(f"Sent command {command.name} to actuator {hex(can_id)}: {list(map(hex,data))}")
-            return True
-
-        except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print(exc_type, fname, exc_tb.tb_lineno)
-            print(f"Failed to send command: {e}")
-            return False
-
-    def initialize_actuator(self, can_id: int) -> bool:
-        """Initialize actuator by sending stop command"""
-        return self.send_command(can_id, LinakCommand.STOP)
-
-    def clear_error(self, can_id: int) -> bool:
-        """Clear error register for actuator"""
-        return self.send_command(can_id, LinakCommand.CLEAR_ERROR)
-
+from constants import *
+from controller import *
 
 class ConfigDialog:
     """Configuration dialog for CAN interface and actuators"""
@@ -165,6 +26,7 @@ class ConfigDialog:
         self.dialog.geometry("500x600")
         self.dialog.transient(parent)
         self.dialog.grab_set()
+
 
         self.setup_ui()
 
@@ -404,11 +266,11 @@ class ActuatorTile:
             position = max(0, min(130, position))  # Clamp to valid range
 
             # Clear error first
-            self.controller.clear_error(self.actuator.can_id)
+            self.controller.clear_error(self.actuator)
             time.sleep(0.1)  # Small delay
 
             # Send position command
-            success = self.controller.send_command(self.actuator.can_id, None, position)
+            success = self.controller.send_command(self.actuator, LinakCommand.GO_TO, position)
             if success:
                 self.position_var.set(position)
                 self.actuator.position = int(position)
@@ -418,29 +280,29 @@ class ActuatorTile:
 
     def all_in(self):
         """Move actuator all the way in"""
-        self.controller.clear_error(self.actuator.can_id)
+        self.controller.clear_error(self.actuator)
         time.sleep(0.1)
-        self.controller.send_command(self.actuator.can_id, LinakCommand.ALL_IN)
+        self.controller.send_command(self.actuator, LinakCommand.ALL_IN)
 
     def all_out(self):
         """Move actuator all the way out"""
-        self.controller.clear_error(self.actuator.can_id)
+        self.controller.clear_error(self.actuator)
         time.sleep(0.1)
-        self.controller.send_command(self.actuator.can_id, LinakCommand.ALL_OUT)
+        self.controller.send_command(self.actuator, LinakCommand.ALL_OUT)
 
     def stop(self):
         """Stop actuator movement"""
-        self.controller.send_command(self.actuator.can_id, LinakCommand.STOP)
+        self.controller.send_command(self.actuator, LinakCommand.STOP)
 
     def initialize(self):
         """Initialize actuator"""
-        success = self.controller.initialize_actuator(self.actuator.can_id)
+        success = self.controller.initialize_actuator(self.actuator)
         if success:
             messagebox.showinfo("Initialize", f"Actuator {self.actuator.name} initialized successfully")
 
     def clear_error(self):
         """Clear actuator error register"""
-        success = self.controller.clear_error(self.actuator.can_id)
+        success = self.controller.clear_error(self.actuator)
         if success:
             messagebox.showinfo("Clear Error", f"Error register cleared for {self.actuator.name}")
 
@@ -588,6 +450,8 @@ class LinakControllerApp:
         self.connect_button.config(text="Connect")
         self.emergency_stop_button.config(state=tk.DISABLED)
 
+        self.notifier.stop()
+
         # Update all tile statuses
         for tile in self.actuator_tiles:
             tile.update_status(False)
@@ -595,13 +459,13 @@ class LinakControllerApp:
     def initialize_all_actuators(self):
         """Initialize all actuators with stop command"""
         for tile in self.actuator_tiles:
-            self.controller.initialize_actuator(tile.actuator.can_id)
+            self.controller.initialize_actuator(tile.actuator)
             time.sleep(0.05)  # Small delay between commands
 
     def emergency_stop(self):
         """Emergency stop all actuators"""
         for tile in self.actuator_tiles:
-            self.controller.send_command(tile.actuator.can_id, LinakCommand.STOP)
+            self.controller.send_command(tile.actuator, LinakCommand.STOP)
         messagebox.showinfo("Emergency Stop", "All actuators have been stopped.")
 
     def run(self):
