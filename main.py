@@ -450,8 +450,6 @@ class LinakControllerApp:
         self.connect_button.config(text="Connect")
         self.emergency_stop_button.config(state=tk.DISABLED)
 
-        self.notifier.stop()
-
         # Update all tile statuses
         for tile in self.actuator_tiles:
             tile.update_status(False)
