@@ -1,2 +1,2 @@
 python-can>=4.0.0
-tkinter
+tk
