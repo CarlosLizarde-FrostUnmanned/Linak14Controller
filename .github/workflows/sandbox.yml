@@ -10,10 +10,11 @@ on:
 # This permissions block grants the GITHUB_TOKEN the necessary write access for pull requests.
 permissions:
   pull-requests: write
+  contents: read
 
 jobs:
   deploy:
-    runs-on: [self-hosted, Windows, X64, GCS]
+    runs-on: OBS
 
     steps:
       - name: Checkout code
@@ -22,16 +23,20 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.13'
+          python-version: '3.12'
+          architecture: 'x64'
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          py -m ensurepip
+          py -m pip install --upgrade pip
+          py -m pip install --upgrade pip
+          py -m pip install pyinstaller
+          py -m pip install -r requirements.txt
 
       - name: Build EXE with PyInstaller
         run: |
-          pyinstaller --onefile --name LinakApp main.py
+          py -m PyInstaller --onefile --name LinakApp main.py
           # The .exe will be at dist\LinakApp.exe
 
       - name: Deploy to sandbox directory
