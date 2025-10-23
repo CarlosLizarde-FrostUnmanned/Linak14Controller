@@ -22,8 +22,8 @@ class ConfigDialog:
         self.parent = parent
         self.result = None
         self.dialog = tk.Toplevel(parent)
-        self.dialog.title("LINAK Controller Configuration")
-        self.dialog.geometry("500x600")
+        self.dialog.title("LINAK Controller Configurator LTS")
+        self.dialog.geometry("800x600")
         self.dialog.transient(parent)
         self.dialog.grab_set()
 
