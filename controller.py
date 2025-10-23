@@ -59,7 +59,7 @@ class LinakController:
             self.notifier.stop()
         self._stop_timeout_checker()
         self.is_connected = False
-        print("Disconnected from CAN bus")
+        print("Disconnected from CAN bus.")
 
     def disconnect_bus(self):
         """Safely disconnect CAN bus and stop all tasks"""
